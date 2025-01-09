@@ -1,48 +1,42 @@
 #include <iostream>
 #include <vector>
+#include <queue>
 
 using namespace std;
 
+
+
 // Floyed Warshall method
 
-vector<int> maxPathBetweenColors(int n, int numColors, vector<vector<int>>& adj, vector<int>& colors) {
+vector<int> maxPathBetweenColors(int n, vector<vector<int>>& adj, vector<int>& colors, vector<int>& sources) {
 	vector<int> ans;
-	vector<vector<int>> matrix(n + 1, vector<int>(n + 1, -1));
-	for (int i = 0; i < adj.size(); i++)
-	{
-		matrix[i][i] = 0;
 
-		for (auto it: adj[i]) {
-			matrix[i][it] = 1;
-			matrix[it][i] = 1;
-		}
-	}
+	for (auto it : sources) {
+		vector<int> vis1(n + 1);
+		queue<pair<int, int>> qu;
+		int max_dist = 0;
+		qu.push({ it, 0 });
 
-	int n = matrix.size();
+		while (!qu.empty()) {
+			int node = qu.front().first;
+			int path = qu.front().second;
+			qu.pop();
 
-	for (int k = 0; k < n; k++) {
-		for (int i = 0; i < n; i++) {
-			for (int j = 0; j < n; j++) {
-				matrix[i][j] = (matrix[i][j] > matrix[i][k] + matrix[k][j]) ? matrix[i][j] : matrix[i][k] + matrix[k][j];
+			vis1[node] = 1;
+
+			if (colors[node] == colors[it]) {
+				max_dist = max(max_dist, path);
 			}
-		}
-	}
 
-	for (int i = 1; i < numColors + 1; i++)
-	{
-		int curr_sum = -1;
-		for (int j = 0; j < n; j++)
-		{
-			for (int k = 0; k < n; k++)
-			{
-				if (matrix[j][k] > curr_sum && j != k && colors[j] == colors[k])
+			for (auto at : adj[node]) {
+				if (!vis1[at])
 				{
-					curr_sum = matrix[j][k];
+					qu.push({ at, path + 1 });
 				}
 			}
 		}
 
-		ans.push_back(curr_sum);
+		ans.push_back(max_dist);
 	}
 
 	return ans;
@@ -58,24 +52,32 @@ int main()
 		int n, k;
 		cin >> n >> k;
 
-		vector<vector<int>> adj(n+1);
-		vector<int> colors(n+1);
+		vector<vector<int>> adj(n + 1);
+		vector<int> sources(k);
+		vector<int> colors(n + 1);
 
-		int a, b;
+		int a , b;
 		cin >> a >> b;
 
-		colors[1] = b;
+		sources[b - 1] = a + 1;
+		colors[a + 1] = b;
 
 		for (int i = 1; i < n; i++) {
 			int parent, color;
 			cin >> parent >> color;
 
+			if (sources[color - 1] < i + 1)
+			{
+				sources[color - 1] = i + 1;
+			}
+
 			colors[i + 1] = color;
+
 			adj[parent].push_back(i + 1);
 			adj[i + 1].push_back(parent);
 		}
 
-		vector<int> res = maxPathBetweenColors(n, k, adj, colors);
+		vector<int> res = maxPathBetweenColors(n, adj, colors, sources);
 
 		for (int i = 0; i < res.size(); i++)
 		{
